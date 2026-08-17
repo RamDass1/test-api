@@ -1,0 +1,503 @@
+openapi: 3.0.0
+info:
+  title: test-api
+  version: "1.0"
+  description: "Test api project"
+servers:
+  - url: http://localhost:8080
+security:
+  - bearerAuth: []
+tags:
+  - name: auth
+  - name: teams
+  - name: tasks
+paths:
+  /api/v1/register:
+    post:
+      tags: [auth]
+      operationId: registerUser
+      description: Регистрация
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, name, password]
+              properties:
+                email: { type: string, format: email}
+                name: { type: string}
+                password: { type: string, format: password, minLength: 8 }
+      responses:
+        "201":
+          description: Создание пользователя 
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409":
+          description: Email уже занят
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/v1/login:
+    post:
+      tags: [auth]
+      operationId: login
+      description: Логин и выдача JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Сессия
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/teams:
+    post:
+      tags: [teams]
+      operationId: createTeam
+      description: Создать команду
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string}
+      responses:
+        "201":
+          description: Команда создана
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Team" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    get:
+      tags: [teams]
+      operationId: listTeams
+      description: Список комад текущего пользователя
+      responses:
+        "200":
+          description: Список комад получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Team" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/teams/{team_id}/invite:
+    post:
+      tags: [teams]
+      operationId: inviteTeamMember
+      description: Добавить участника
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id: { type: integer, format: int64 }
+                email: { type: string, format: email }
+                role:
+                  type: string
+                  enum: [admin, member]
+                  default: member
+      responses:
+        "201":
+          description: Участник добавлен
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamMember" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Уже в команде
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/v1/teams/{team_id}/members/{user_id}:
+    patch:
+      tags: [teams]
+      operationId: changeRole
+      description: Сменить роль
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [admin, member]
+      responses:
+        "200":
+          description: Роль обновлена
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamMember" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/teams/{team_id}/stats:
+    get:
+      tags: [teams]
+      operationId: getTeamStats
+      description: SQL-отчёт по команде
+      parameters:
+        - $ref: "#/components/parameters/TeamId"
+      responses:
+        "200":
+          description: Отчёт
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamStats" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/tasks:
+    post:
+      tags: [tasks]
+      operationId: createTask
+      description: Создать задачу
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [team_id, title]
+              properties:
+                team_id: { type: integer, format: int64 }
+                title: { type: string }
+                description: { type: string }
+                assignee_id:
+                  type: integer
+                  format: int64
+                  nullable: true
+      responses:
+        "201":
+          description: Задача создана
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    get:
+      tags: [tasks]
+      operationId: listTasks
+      description: Список задач команды
+      parameters:
+        - name: team_id
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/TaskStatus" }
+        - name: assignee_id
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        "200":
+          description: Страница задач
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaskPage" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/tasks/{task_id}:
+    put:
+      tags: [tasks]
+      operationId: updateTask
+      description: Обновить задачу
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                status: { $ref: "#/components/schemas/TaskStatus" }
+                assignee_id:
+                  type: integer
+                  format: int64
+                  nullable: true
+                version: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Задача обновлена
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Задачу уже изменили
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/v1/tasks/{task_id}/history:
+    get:
+      tags: [tasks]
+      operationId: getTaskHistory
+      description: История изменений
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Список изменений
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/History" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/tasks/{task_id}/comments:
+    post:
+      tags: [tasks]
+      operationId: addTaskComment
+      description: Комментарий к задаче
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+      responses:
+        "201":
+          description: Комментарий создан
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Comment" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    get:
+      tags: [tasks]
+      operationId: listTaskComments
+      description: Список комментариев
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Комментарии
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Comment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TeamId:
+      name: team_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+  responses:
+    ValidationError:
+      description: Невалидный запрос
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Неавторизован
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Доступ запрещен
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - validation_error
+                - unauthorized
+                - forbidden
+                - not_found
+                - conflict
+            message: { type: string }
+    User:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        email: { type: string, format: email }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+    Session:
+      type: object
+      properties:
+        token: { type: string }
+        expires_at: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/User" }
+    Role:
+      type: string
+      enum: [owner, admin, member]
+    Team:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        created_by: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+        role: { $ref: "#/components/schemas/Role" }
+    TeamMember:
+      type: object
+      properties:
+        team_id: { type: integer, format: int64 }
+        user_id: { type: integer, format: int64 }
+        role: { $ref: "#/components/schemas/Role" }
+        email: { type: string, format: email }
+        name: { type: string }
+    TaskStatus:
+      type: string
+      enum: [todo, in_progress, done]
+      default: todo
+    Task:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        team_id: { type: integer, format: int64 }
+        title: { type: string }
+        description: { type: string }
+        status: { $ref: "#/components/schemas/TaskStatus" }
+        created_by: { type: integer, format: int64 }
+        assignee_id: { type: integer, format: int64, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        closed_at: { type: string, format: date-time, nullable: true }
+        version: { type: integer, format: int64 }
+    TaskPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Task" }
+        limit: { type: integer }
+        offset: { type: integer }
+    History:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        task_id: { type: integer, format: int64 }
+        changed_by: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+        changes:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              from: {}
+              to: {}
+    Comment:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        task_id: { type: integer, format: int64 }
+        user_id: { type: integer, format: int64 }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+    TeamStats:
+      type: object
+      properties:
+        team_id: { type: integer, format: int64 }
+        tasks_by_status:
+          type: object
+          additionalProperties: { type: integer, format: int64 }
+          example: { todo: 4, in_progress: 2, done: 11 }
+        top_assignees_30d:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            properties:
+              user_id: { type: integer, format: int64 }
+              name: { type: string }
+              closed_tasks: { type: integer, format: int64 }
+        avg_close_seconds:
+          type: number
+          format: double
+          nullable: true
+        comments_total: { type: integer, format: int64 }
