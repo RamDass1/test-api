@@ -10,6 +10,7 @@ type Code string
 const (
 	CodeValidation   Code = "validation_error"
 	CodeUnauthorized Code = "unauthorized"
+	CodeForbidden    Code = "forbidden"
 	CodeNotFound     Code = "not_found"
 	CodeConflict     Code = "conflict"
 	CodeInternal     Code = "internal_error"
@@ -18,6 +19,7 @@ const (
 var (
 	ErrNotFound      = errors.New("not found")
 	ErrAlreadyExists = errors.New("already exists")
+	ErrUnknownID     = errors.New("unknown id")
 )
 
 type Error struct {
@@ -41,6 +43,14 @@ func Invalid(format string, args ...any) *Error {
 
 func Unauthorized(format string, args ...any) *Error {
 	return &Error{Code: CodeUnauthorized, Message: fmt.Sprintf(format, args...)}
+}
+
+func Forbidden(format string, args ...any) *Error {
+	return &Error{Code: CodeForbidden, Message: fmt.Sprintf(format, args...)}
+}
+
+func NotFound(format string, args ...any) *Error {
+	return &Error{Code: CodeNotFound, Message: fmt.Sprintf(format, args...)}
 }
 
 func Conflict(format string, args ...any) *Error {

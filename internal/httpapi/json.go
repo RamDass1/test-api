@@ -45,6 +45,8 @@ func writeError(w http.ResponseWriter, err error) {
 		status = http.StatusBadRequest
 	case domain.CodeUnauthorized:
 		status = http.StatusUnauthorized
+	case domain.CodeForbidden:
+		status = http.StatusForbidden
 	case domain.CodeNotFound:
 		status = http.StatusNotFound
 	case domain.CodeConflict:

@@ -8,8 +8,18 @@ import (
 )
 
 type DB interface {
+	InTx(ctx context.Context, fn func(DB) error) error
+
 	CreateUser(ctx context.Context, email, name, passwordHash string) (domain.User, error)
+	UserByID(ctx context.Context, id int64) (domain.User, error)
+	UserByEmail(ctx context.Context, email string) (domain.User, error)
 	CredentialsByEmail(ctx context.Context, email string) (domain.Credentials, error)
+
+	CreateTeam(ctx context.Context, name string, createdBy int64) (domain.Team, error)
+	AddMember(ctx context.Context, teamID, userID int64, role domain.Role) error
+	UpdateMemberRole(ctx context.Context, teamID, userID int64, role domain.Role) error
+	Membership(ctx context.Context, teamID, userID int64) (domain.TeamMember, error)
+	TeamsForUser(ctx context.Context, userID int64) ([]domain.Team, error)
 }
 
 type Hasher interface {
