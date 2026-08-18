@@ -42,10 +42,11 @@ func main() {
 	}
 	defer db.Close()
 
-	svc := service.New(db, auth.Hasher{}, auth.NewTokens(cfg.JWTSecret, cfg.JWTTTL))
+	tokens := auth.NewTokens(cfg.JWTSecret, cfg.JWTTTL)
+	svc := service.New(newServiceDB(db), auth.Hasher{}, tokens)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.New(svc).Handler(),
+		Handler:           httpapi.New(svc, tokens).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

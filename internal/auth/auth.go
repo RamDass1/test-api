@@ -35,7 +35,7 @@ func NewTokens(secret []byte, ttl time.Duration) *Tokens {
 }
 
 func (t *Tokens) Issue(userID int64) (string, time.Time, error) {
-	now := time.Now()
+	now := time.Now().UTC()
 	exp := now.Add(t.ttl)
 	claims := jwt.RegisteredClaims{
 		Subject:   strconv.FormatInt(userID, 10),
