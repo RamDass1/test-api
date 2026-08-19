@@ -12,6 +12,8 @@ type Config struct {
 	HTTPAddr    string
 	MySQLDSN    string
 	AutoMigrate bool
+	RedisAddr   string
+	CacheTTL    time.Duration
 	JWTSecret   []byte
 	JWTTTL      time.Duration
 }
@@ -21,6 +23,8 @@ func Load() (Config, error) {
 		HTTPAddr:    env("HTTP_ADDR", ":8080"),
 		MySQLDSN:    env("MYSQL_DSN", ""),
 		AutoMigrate: boolean("MYSQL_AUTO_MIGRATE", true),
+		RedisAddr:   env("REDIS_ADDR", "127.0.0.1:6379"),
+		CacheTTL:    5 * time.Minute,
 		JWTSecret:   []byte(env("JWT_SECRET", "")),
 		JWTTTL:      24 * time.Hour,
 	}
@@ -32,6 +36,13 @@ func Load() (Config, error) {
 		}
 		cfg.JWTTTL = d
 	}
+	if raw := env("CACHE_TASK_LIST_TTL", ""); raw != "" {
+		d, err := time.ParseDuration(raw)
+		if err != nil {
+			return Config{}, fmt.Errorf("CACHE_TASK_LIST_TTL: %w", err)
+		}
+		cfg.CacheTTL = d
+	}
 
 	if cfg.MySQLDSN == "" {
 		return Config{}, errors.New("MYSQL_DSN is required")
@@ -41,6 +52,9 @@ func Load() (Config, error) {
 	}
 	if cfg.JWTTTL <= 0 {
 		return Config{}, errors.New("JWT_TTL must be positive")
+	}
+	if cfg.CacheTTL <= 0 {
+		return Config{}, errors.New("CACHE_TASK_LIST_TTL must be positive")
 	}
 	return cfg, nil
 }
