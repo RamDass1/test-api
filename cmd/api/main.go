@@ -43,7 +43,7 @@ func main() {
 	defer db.Close()
 
 	tokens := auth.NewTokens(cfg.JWTSecret, cfg.JWTTTL)
-	svc := service.New(newServiceDB(db), auth.Hasher{}, tokens)
+	svc := service.New(db, auth.Hasher{}, tokens)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           httpapi.New(svc, tokens).Handler(),

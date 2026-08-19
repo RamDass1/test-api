@@ -8,8 +8,6 @@ import (
 )
 
 type DB interface {
-	InTx(ctx context.Context, fn func(DB) error) error
-
 	CreateUser(ctx context.Context, email, name, passwordHash string) (domain.User, error)
 	UserByID(ctx context.Context, id int64) (domain.User, error)
 	UserByEmail(ctx context.Context, email string) (domain.User, error)

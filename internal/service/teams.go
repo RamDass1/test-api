@@ -19,25 +19,12 @@ func (s *Service) CreateTeam(ctx context.Context, userID int64, name string) (do
 	if err != nil {
 		return domain.Team{}, err
 	}
-
-	var team domain.Team
-	err = s.db.InTx(ctx, func(db DB) error {
-		created, err := db.CreateTeam(ctx, teamName, userID)
-		if errors.Is(err, domain.ErrUnknownID) {
-			return domain.Unauthorized("authenticated user no longer exists")
-		}
-		if err != nil {
-			return domain.Internal(err, "create team")
-		}
-		if err := db.AddMember(ctx, created.ID, userID, domain.RoleOwner); err != nil {
-			return domain.Internal(err, "add team owner")
-		}
-		created.Role = domain.RoleOwner
-		team = created
-		return nil
-	})
+	team, err := s.db.CreateTeam(ctx, teamName, userID)
+	if errors.Is(err, domain.ErrUnknownID) {
+		return domain.Team{}, domain.Unauthorized("authenticated user no longer exists")
+	}
 	if err != nil {
-		return domain.Team{}, err
+		return domain.Team{}, domain.Internal(err, "create team")
 	}
 	return team, nil
 }
@@ -57,8 +44,14 @@ func (s *Service) InviteMember(ctx context.Context, actorID, teamID int64, req I
 	if !req.Role.Valid() {
 		return domain.TeamMember{}, domain.Invalid("unknown role %q", req.Role)
 	}
-	if req.UserID <= 0 && strings.TrimSpace(req.Email) == "" {
+
+	hasID := req.UserID > 0
+	hasEmail := strings.TrimSpace(req.Email) != ""
+	if !hasID && !hasEmail {
 		return domain.TeamMember{}, domain.Invalid("user_id or email is required")
+	}
+	if hasID && hasEmail {
+		return domain.TeamMember{}, domain.Invalid("provide user_id or email, not both")
 	}
 
 	actor, err := membership(ctx, s.db, teamID, actorID)
@@ -76,7 +69,7 @@ func (s *Service) InviteMember(ctx context.Context, actorID, teamID int64, req I
 
 	err = s.db.AddMember(ctx, teamID, invitee.ID, req.Role)
 	if errors.Is(err, domain.ErrAlreadyExists) {
-		return domain.TeamMember{}, domain.Conflict("user %d is already a member of team %d", invitee.ID, teamID)
+		return domain.TeamMember{}, domain.Conflict("user %d is already member of team %d", invitee.ID, teamID)
 	}
 	if err != nil {
 		return domain.TeamMember{}, domain.Internal(err, "add team member")
@@ -98,7 +91,7 @@ func (s *Service) resolveInvitee(ctx context.Context, req InviteRequest) (domain
 			return domain.User{}, domain.NotFound("user %d not found", req.UserID)
 		}
 		if err != nil {
-			return domain.User{}, domain.Internal(err, "load invitee")
+			return domain.User{}, domain.Internal(err, "load invite")
 		}
 		return user, nil
 	}
