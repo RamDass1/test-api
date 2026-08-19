@@ -11,8 +11,10 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/RamDass1/test-api/internal/auth"
+	"github.com/RamDass1/test-api/internal/cache"
 	"github.com/RamDass1/test-api/internal/config"
 	"github.com/RamDass1/test-api/internal/httpapi"
 	"github.com/RamDass1/test-api/internal/service"
@@ -42,8 +44,15 @@ func main() {
 	}
 	defer db.Close()
 
+	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
+	defer rdb.Close()
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		log.Printf("redis is unreachable, serving without cache: %v", err)
+	}
+
 	tokens := auth.NewTokens(cfg.JWTSecret, cfg.JWTTTL)
-	svc := service.New(db, auth.Hasher{}, tokens)
+	taskCache := cache.NewTaskCache(rdb, cfg.CacheTTL)
+	svc := service.New(db, taskCache, auth.Hasher{}, tokens)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           httpapi.New(svc, tokens).Handler(),

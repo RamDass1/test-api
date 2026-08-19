@@ -22,3 +22,7 @@ func (r Role) Assignable() bool {
 func (r Role) CanManageMembers() bool {
 	return r == RoleOwner || r == RoleAdmin
 }
+
+func (r Role) CanEditAnyTask() bool {
+	return r == RoleOwner || r == RoleAdmin
+}

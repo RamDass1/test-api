@@ -18,6 +18,18 @@ type DB interface {
 	UpdateMemberRole(ctx context.Context, teamID, userID int64, role domain.Role) error
 	Membership(ctx context.Context, teamID, userID int64) (domain.TeamMember, error)
 	TeamsForUser(ctx context.Context, userID int64) ([]domain.Team, error)
+
+	CreateTask(ctx context.Context, in domain.NewTask) (domain.Task, error)
+	TaskByID(ctx context.Context, id int64) (domain.Task, error)
+	UpdateTask(ctx context.Context, id, expectedVersion int64, upd domain.TaskUpdate, changedBy int64, changes map[string]domain.FieldChange) (domain.Task, error)
+	ListTasks(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, error)
+	TaskHistory(ctx context.Context, taskID int64) ([]domain.HistoryEntry, error)
+}
+
+type Cache interface {
+	Get(ctx context.Context, filter domain.TaskFilter) (domain.TaskPage, bool)
+	Set(ctx context.Context, filter domain.TaskFilter, page domain.TaskPage)
+	Invalidate(ctx context.Context, teamID int64)
 }
 
 type Hasher interface {
@@ -31,10 +43,11 @@ type Tokens interface {
 
 type Service struct {
 	db     DB
+	cache  Cache
 	hasher Hasher
 	tokens Tokens
 }
 
-func New(db DB, hasher Hasher, tokens Tokens) *Service {
-	return &Service{db: db, hasher: hasher, tokens: tokens}
+func New(db DB, cache Cache, hasher Hasher, tokens Tokens) *Service {
+	return &Service{db: db, cache: cache, hasher: hasher, tokens: tokens}
 }

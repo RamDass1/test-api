@@ -17,9 +17,10 @@ const (
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrAlreadyExists = errors.New("already exists")
-	ErrUnknownID     = errors.New("unknown id")
+	ErrNotFound         = errors.New("not found")
+	ErrAlreadyExists    = errors.New("already exists")
+	ErrUnknownID        = errors.New("unknown id")
+	ErrVersionConflict  = errors.New("version conflict")
 )
 
 type Error struct {

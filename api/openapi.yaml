@@ -433,7 +433,7 @@ components:
         name: { type: string }
     TaskStatus:
       type: string
-      enum: [todo, in_progress, done]
+      enum: [todo, in_progress, done, cancelled]
       default: todo
     Task:
       type: object
@@ -486,7 +486,6 @@ components:
         tasks_by_status:
           type: object
           additionalProperties: { type: integer, format: int64 }
-          example: { todo: 4, in_progress: 2, done: 11 }
         top_assignees_30d:
           type: array
           maxItems: 3
