@@ -26,13 +26,13 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 		token, ok := bearerToken(r.Header.Get("Authorization"))
 		if !ok {
 			w.Header().Set("WWW-Authenticate", `Bearer realm="api"`)
-			writeError(w, domain.Unauthorized("a bearer token is required"))
+			writeError(w, domain.Unauthorized("bearer token is required"))
 			return
 		}
 		id, err := s.tokens.Parse(token)
 		if err != nil {
 			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
-			writeError(w, domain.Unauthorized("the token is invalid or has expired"))
+			writeError(w, domain.Unauthorized("token is invalid or has expired"))
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userIDKey, id)))
