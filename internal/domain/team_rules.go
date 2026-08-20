@@ -22,3 +22,10 @@ func AuthorizeRoleChange(actor Actor, target TeamMember, newRole Role) error {
 	}
 	return nil
 }
+
+func AuthorizeStatsAccess(actor Actor) error {
+	if !actor.Role.CanViewStats() {
+		return Forbidden("only the team owner or an admin may view team analytics")
+	}
+	return nil
+}

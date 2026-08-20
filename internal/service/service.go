@@ -18,12 +18,15 @@ type DB interface {
 	UpdateMemberRole(ctx context.Context, teamID, userID int64, role domain.Role) error
 	Membership(ctx context.Context, teamID, userID int64) (domain.TeamMember, error)
 	TeamsForUser(ctx context.Context, userID int64) ([]domain.Team, error)
+	TeamStats(ctx context.Context, teamID int64) (domain.TeamStats, error)
 
 	CreateTask(ctx context.Context, in domain.NewTask) (domain.Task, error)
 	TaskByID(ctx context.Context, id int64) (domain.Task, error)
 	UpdateTask(ctx context.Context, id, expectedVersion int64, upd domain.TaskUpdate, changedBy int64, changes map[string]domain.FieldChange) (domain.Task, error)
 	ListTasks(ctx context.Context, filter domain.TaskFilter) ([]domain.Task, error)
 	TaskHistory(ctx context.Context, taskID int64) ([]domain.HistoryEntry, error)
+	AddComment(ctx context.Context, taskID, userID int64, content string) (domain.Comment, error)
+	TaskComments(ctx context.Context, taskID int64) ([]domain.Comment, error)
 }
 
 type Cache interface {

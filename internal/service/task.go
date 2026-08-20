@@ -135,6 +135,32 @@ func (s *Service) TaskHistory(ctx context.Context, actorID, taskID int64) ([]dom
 	return entries, nil
 }
 
+func (s *Service) AddComment(ctx context.Context, actorID, taskID int64, content string) (domain.Comment, error) {
+	if err := domain.ValidateComment(content); err != nil {
+		return domain.Comment{}, err
+	}
+	if _, _, err := taskForMember(ctx, s.db, taskID, actorID); err != nil {
+		return domain.Comment{}, err
+	}
+
+	comment, err := s.db.AddComment(ctx, taskID, actorID, strings.TrimSpace(content))
+	if err != nil {
+		return domain.Comment{}, domain.Internal(err, "add comment")
+	}
+	return comment, nil
+}
+
+func (s *Service) ListComments(ctx context.Context, actorID, taskID int64) ([]domain.Comment, error) {
+	if _, _, err := taskForMember(ctx, s.db, taskID, actorID); err != nil {
+		return nil, err
+	}
+	comments, err := s.db.TaskComments(ctx, taskID)
+	if err != nil {
+		return nil, domain.Internal(err, "list comments")
+	}
+	return comments, nil
+}
+
 func taskForMember(ctx context.Context, db DB, taskID, actorID int64) (domain.Task, domain.Actor, error) {
 	task, err := db.TaskByID(ctx, taskID)
 	if errors.Is(err, domain.ErrNotFound) {
