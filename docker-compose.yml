@@ -1,20 +1,55 @@
 services:
   mysql:
     image: mysql:8.0
+    command:
+      - --default-time-zone=+00:00
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-test_api}
       MYSQL_USER: ${MYSQL_USER:-app}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      HTTP_ADDR: ":8080"
+      MYSQL_DSN: "${MYSQL_USER:-app}:${MYSQL_PASSWORD:-app}@tcp(mysql:3306)/${MYSQL_DATABASE:-test_api}"
+      MYSQL_AUTO_MIGRATE: "true"
+      REDIS_ADDR: "redis:6379"
+      JWT_SECRET: "${JWT_SECRET:?set JWT_SECRET in .env, at least 32 characters}"
+      JWT_TTL: "${JWT_TTL:-24h}"
+      CACHE_TASK_LIST_TTL: "${CACHE_TASK_LIST_TTL:-5m}"
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
