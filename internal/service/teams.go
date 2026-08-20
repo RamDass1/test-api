@@ -139,6 +139,22 @@ func (s *Service) ChangeMemberRole(ctx context.Context, actorID, teamID, targetI
 	return target, nil
 }
 
+func (s *Service) TeamStats(ctx context.Context, actorID, teamID int64) (domain.TeamStats, error) {
+	actor, err := membership(ctx, s.db, teamID, actorID)
+	if err != nil {
+		return domain.TeamStats{}, err
+	}
+	if err := domain.AuthorizeStatsAccess(actor); err != nil {
+		return domain.TeamStats{}, err
+	}
+
+	stats, err := s.db.TeamStats(ctx, teamID)
+	if err != nil {
+		return domain.TeamStats{}, domain.Internal(err, "build team stats")
+	}
+	return stats, nil
+}
+
 func membership(ctx context.Context, db DB, teamID, userID int64) (domain.Actor, error) {
 	member, err := db.Membership(ctx, teamID, userID)
 	if errors.Is(err, domain.ErrNotFound) {

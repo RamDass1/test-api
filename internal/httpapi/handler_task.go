@@ -15,6 +15,10 @@ type createTaskRequest struct {
 	AssigneeID  *int64 `json:"assignee_id"`
 }
 
+type commentRequest struct {
+	Content string `json:"content"`
+}
+
 func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	var req createTaskRequest
 	if err := decodeJSON(w, r, &req); err != nil {
@@ -126,6 +130,42 @@ func (s *Server) handleTaskHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": entries})
+}
+
+func (s *Server) handleAddComment(w http.ResponseWriter, r *http.Request) {
+	taskID, err := pathID(r, "task_id")
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	var req commentRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, err)
+		return
+	}
+
+	comment, err := s.svc.AddComment(r.Context(), userID(r.Context()), taskID, req.Content)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, comment)
+}
+
+func (s *Server) handleListComments(w http.ResponseWriter, r *http.Request) {
+	taskID, err := pathID(r, "task_id")
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	comments, err := s.svc.ListComments(r.Context(), userID(r.Context()), taskID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": comments})
 }
 
 func queryID(r *http.Request, name string) (*int64, error) {

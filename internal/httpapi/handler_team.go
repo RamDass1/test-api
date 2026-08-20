@@ -105,3 +105,18 @@ func (s *Server) handleChangeRole(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, toMemberResponse(member))
 }
+
+func (s *Server) handleTeamStats(w http.ResponseWriter, r *http.Request) {
+	teamID, err := pathID(r, "team_id")
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	stats, err := s.svc.TeamStats(r.Context(), userID(r.Context()), teamID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, stats)
+}

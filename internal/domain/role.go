@@ -26,3 +26,7 @@ func (r Role) CanManageMembers() bool {
 func (r Role) CanEditAnyTask() bool {
 	return r == RoleOwner || r == RoleAdmin
 }
+
+func (r Role) CanViewStats() bool {
+	return r == RoleOwner || r == RoleAdmin
+}
