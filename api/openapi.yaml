@@ -235,6 +235,9 @@ paths:
         - name: offset
           in: query
           schema: { type: integer, minimum: 0, default: 0 }
+        - name: cursor
+          in: query
+          schema: { type: integer, format: int64 }
       responses:
         "200":
           description: Страница задач
@@ -454,11 +457,14 @@ components:
     TaskPage:
       type: object
       properties:
-        items:
-          type: array
-          items: { $ref: "#/components/schemas/Task" }
-        limit: { type: integer }
-        offset: { type: integer }
+      items:
+        type: array
+        items: { $ref: "#/components/schemas/Task" }
+      limit: { type: integer }
+      offset: { type: integer }
+      next_cursor:
+        type: integer
+        format: int64
     History:
       type: object
       properties:

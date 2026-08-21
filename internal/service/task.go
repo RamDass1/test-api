@@ -106,6 +106,9 @@ func (s *Service) ListTasks(ctx context.Context, actorID int64, filter domain.Ta
 	}
 	filter.Limit = normalizeLimit(filter.Limit)
 	filter.Offset = normalizeOffset(filter.Offset)
+	if filter.Cursor != nil {
+		filter.Offset = 0
+	}
 
 	if _, err := membership(ctx, s.db, filter.TeamID, actorID); err != nil {
 		return domain.TaskPage{}, err
@@ -119,7 +122,13 @@ func (s *Service) ListTasks(ctx context.Context, actorID int64, filter domain.Ta
 	if err != nil {
 		return domain.TaskPage{}, domain.Internal(err, "list tasks")
 	}
+
 	page := domain.TaskPage{Items: tasks, Limit: filter.Limit, Offset: filter.Offset}
+	if len(tasks) == filter.Limit {
+		next := tasks[len(tasks)-1].ID
+		page.NextCursor = &next
+	}
+
 	s.cache.Set(ctx, filter, page)
 	return page, nil
 }

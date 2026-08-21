@@ -80,12 +80,14 @@ type TaskFilter struct {
 	AssigneeID *int64
 	Limit      int
 	Offset     int
+	Cursor     *int64
 }
 
 type TaskPage struct {
-	Items  []Task `json:"items"`
-	Limit  int    `json:"limit"`
-	Offset int    `json:"offset"`
+	Items      []Task `json:"items"`
+	Limit      int    `json:"limit"`
+	Offset     int    `json:"offset"`
+	NextCursor *int64 `json:"next_cursor,omitempty"`
 }
 
 func CloseTimestamp(current Task, next Status, now time.Time) *time.Time {

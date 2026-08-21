@@ -133,6 +133,9 @@ curl -s -X POST $API/tasks -H "$AUTH" -H 'Content-Type: application/json' \
 curl -s -G $API/tasks -H "$AUTH" \
   -d team_id=1 -d status=todo -d assignee_id=2 -d limit=20 -d offset=0
 
+curl -s -G $API/tasks -H "$AUTH" \
+  -d team_id=1 -d limit=20 -d cursor=15  
+
 curl -s -X PUT $API/tasks/1 -H "$AUTH" -H 'Content-Type: application/json' \
   -d '{"status":"in_progress","version":1}'
 

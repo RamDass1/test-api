@@ -118,10 +118,19 @@ func (s *Store) ListTasks(ctx context.Context, f domain.TaskFilter) ([]domain.Ta
 		where = append(where, "assignee_id = ?")
 		args = append(args, *f.AssigneeID)
 	}
+	if f.Cursor != nil {
+		where = append(where, "id < ?")
+		args = append(args, *f.Cursor)
+	}
 
 	query := `SELECT ` + taskColumns + ` FROM tasks WHERE ` + strings.Join(where, " AND ") +
-		` ORDER BY id DESC LIMIT ? OFFSET ?`
-	args = append(args, f.Limit, f.Offset)
+		` ORDER BY id DESC LIMIT ?`
+	args = append(args, f.Limit)
+
+	if f.Cursor == nil && f.Offset > 0 {
+		query += ` OFFSET ?`
+		args = append(args, f.Offset)
+	}
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {

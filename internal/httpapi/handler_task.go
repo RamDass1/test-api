@@ -70,6 +70,10 @@ func taskFilterFrom(r *http.Request) (domain.TaskFilter, error) {
 	if err != nil {
 		return domain.TaskFilter{}, err
 	}
+	cursor, err := queryID(r, "cursor")
+	if err != nil {
+		return domain.TaskFilter{}, err
+	}
 	limit, err := queryInt(r, "limit", service.DefaultLimit)
 	if err != nil {
 		return domain.TaskFilter{}, err
@@ -84,6 +88,7 @@ func taskFilterFrom(r *http.Request) (domain.TaskFilter, error) {
 		AssigneeID: assigneeID,
 		Limit:      limit,
 		Offset:     offset,
+		Cursor:     cursor,
 	}
 	if raw := r.URL.Query().Get("status"); raw != "" {
 		status := domain.Status(raw)
