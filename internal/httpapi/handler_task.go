@@ -22,11 +22,11 @@ type commentRequest struct {
 func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	var req createTaskRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	if req.TeamID <= 0 {
-		writeError(w, domain.Invalid("team_id is required"))
+		writeError(w, r, domain.Invalid("team_id is required"))
 		return
 	}
 
@@ -37,7 +37,7 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		AssigneeID:  req.AssigneeID,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, task)
@@ -46,13 +46,13 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 	filter, err := taskFilterFrom(r)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
 	page, err := s.svc.ListTasks(r.Context(), userID(r.Context()), filter)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -95,23 +95,23 @@ func taskFilterFrom(r *http.Request) (domain.TaskFilter, error) {
 func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 	taskID, err := pathID(r, "task_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
 	var patch domain.TaskPatch
 	if err := decodeJSON(w, r, &patch); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	if patch.Empty() && patch.Version == nil {
-		writeError(w, domain.Invalid("provide at least one field to update"))
+		writeError(w, r, domain.Invalid("provide at least one field to update"))
 		return
 	}
 
 	task, err := s.svc.UpdateTask(r.Context(), userID(r.Context()), taskID, patch)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, task)
@@ -120,13 +120,13 @@ func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleTaskHistory(w http.ResponseWriter, r *http.Request) {
 	taskID, err := pathID(r, "task_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
 	entries, err := s.svc.TaskHistory(r.Context(), userID(r.Context()), taskID)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": entries})
@@ -135,19 +135,19 @@ func (s *Server) handleTaskHistory(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAddComment(w http.ResponseWriter, r *http.Request) {
 	taskID, err := pathID(r, "task_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
 	var req commentRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
 	comment, err := s.svc.AddComment(r.Context(), userID(r.Context()), taskID, req.Content)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, comment)
@@ -156,13 +156,13 @@ func (s *Server) handleAddComment(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleListComments(w http.ResponseWriter, r *http.Request) {
 	taskID, err := pathID(r, "task_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
 	comments, err := s.svc.ListComments(r.Context(), userID(r.Context()), taskID)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": comments})

@@ -152,5 +152,5 @@ curl -s $API/teams/1/stats -H "$AUTH"
 Ошибки единого вида:
 
 ```json
-{ "error": { "code": "forbidden", "message": "..." } }
+{ "error": { "code": "forbidden", "message": "...", "request_id": "..." } }
 ```

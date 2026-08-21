@@ -385,20 +385,22 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
   schemas:
     Error:
-      type: object
-      properties:
-        error:
-          type: object
-          properties:
-            code:
-              type: string
-              enum:
-                - validation_error
-                - unauthorized
-                - forbidden
-                - not_found
-                - conflict
-            message: { type: string }
+    type: object
+    properties:
+      error:
+        type: object
+        properties:
+          code:
+            type: string
+            enum:
+              - validation_error
+              - unauthorized
+              - forbidden
+              - not_found
+              - conflict
+              - rate_limited
+          message: { type: string }
+          request_id: { type: string }
     User:
       type: object
       properties:

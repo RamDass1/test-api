@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,10 +23,12 @@ import (
 
 func main() {
 	_ = godotenv.Load()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("config", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -34,35 +36,42 @@ func main() {
 
 	if cfg.AutoMigrate {
 		if err := store.Migrate(ctx, cfg.MySQLDSN); err != nil {
-			log.Fatal(err)
+			slog.Error("migrate", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
 	}
 
 	db, err := store.Open(ctx, cfg.MySQLDSN)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("mysql", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 	defer db.Close()
 
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
 	defer rdb.Close()
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Printf("redis is unreachable, serving without cache: %v", err)
+		slog.Warn("redis is unreachable, serving without cache", slog.String("error", err.Error()))
 	}
 
 	tokens := auth.NewTokens(cfg.JWTSecret, cfg.JWTTTL)
 	taskCache := cache.NewTaskCache(rdb, cfg.CacheTTL)
 	svc := service.New(db, taskCache, auth.Hasher{}, tokens)
+	api := httpapi.New(svc, tokens)
+	go api.Collect(ctx)
+
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.New(svc, tokens).Handler(),
+		Handler:           api.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
+		ErrorLog:          slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
 	}
 
 	go func() {
-		log.Printf("listening on %s", cfg.HTTPAddr)
+		slog.Info("listening", slog.String("addr", cfg.HTTPAddr))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(err)
+			slog.Error("http", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
 	}()
 

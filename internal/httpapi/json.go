@@ -29,11 +29,12 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 }
 
 type errorBody struct {
-	Code    domain.Code `json:"code"`
-	Message string      `json:"message"`
+	Code      domain.Code `json:"code"`
+	Message   string      `json:"message"`
+	RequestID string      `json:"request_id,omitempty"`
 }
 
-func writeError(w http.ResponseWriter, err error) {
+func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	var de *domain.Error
 	if !errors.As(err, &de) {
 		de = domain.Internal(err, "unexpected error")
@@ -51,8 +52,16 @@ func writeError(w http.ResponseWriter, err error) {
 		status = http.StatusNotFound
 	case domain.CodeConflict:
 		status = http.StatusConflict
+	case domain.CodeRateLimited:
+		status = http.StatusTooManyRequests
 	case domain.CodeInternal:
 		msg = "internal server error"
 	}
-	writeJSON(w, status, map[string]any{"error": errorBody{Code: de.Code, Message: msg}})
+	writeJSON(w, status, map[string]any{
+		"error": errorBody{
+			Code:      de.Code,
+			Message:   msg,
+			RequestID: requestIDFrom(r.Context()),
+		},
+	})
 }
