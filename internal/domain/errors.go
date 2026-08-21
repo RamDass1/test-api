@@ -13,6 +13,7 @@ const (
 	CodeForbidden    Code = "forbidden"
 	CodeNotFound     Code = "not_found"
 	CodeConflict     Code = "conflict"
+	CodeRateLimited  Code = "rate_limited"
 	CodeInternal     Code = "internal_error"
 )
 
@@ -56,6 +57,10 @@ func NotFound(format string, args ...any) *Error {
 
 func Conflict(format string, args ...any) *Error {
 	return &Error{Code: CodeConflict, Message: fmt.Sprintf(format, args...)}
+}
+
+func RateLimited(format string, args ...any) *Error {
+	return &Error{Code: CodeRateLimited, Message: fmt.Sprintf(format, args...)}
 }
 
 func Internal(err error, format string, args ...any) *Error {

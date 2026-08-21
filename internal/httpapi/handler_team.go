@@ -33,12 +33,12 @@ func (s *Server) handleCreateTeam(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	team, err := s.svc.CreateTeam(r.Context(), userID(r.Context()), req.Name)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, team)
@@ -47,7 +47,7 @@ func (s *Server) handleCreateTeam(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleListTeams(w http.ResponseWriter, r *http.Request) {
 	teams, err := s.svc.ListTeams(r.Context(), userID(r.Context()))
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": teams})
@@ -56,7 +56,7 @@ func (s *Server) handleListTeams(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleInvite(w http.ResponseWriter, r *http.Request) {
 	teamID, err := pathID(r, "team_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	var req struct {
@@ -65,7 +65,7 @@ func (s *Server) handleInvite(w http.ResponseWriter, r *http.Request) {
 		Role   domain.Role `json:"role"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	member, err := s.svc.InviteMember(r.Context(), userID(r.Context()), teamID, service.InviteRequest{
@@ -74,7 +74,7 @@ func (s *Server) handleInvite(w http.ResponseWriter, r *http.Request) {
 		Role:   req.Role,
 	})
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, toMemberResponse(member))
@@ -83,24 +83,24 @@ func (s *Server) handleInvite(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleChangeRole(w http.ResponseWriter, r *http.Request) {
 	teamID, err := pathID(r, "team_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	targetID, err := pathID(r, "user_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	var req struct {
 		Role domain.Role `json:"role"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	member, err := s.svc.ChangeMemberRole(r.Context(), userID(r.Context()), teamID, targetID, req.Role)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, toMemberResponse(member))
@@ -109,13 +109,13 @@ func (s *Server) handleChangeRole(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleTeamStats(w http.ResponseWriter, r *http.Request) {
 	teamID, err := pathID(r, "team_id")
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 
 	stats, err := s.svc.TeamStats(r.Context(), userID(r.Context()), teamID)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, stats)
